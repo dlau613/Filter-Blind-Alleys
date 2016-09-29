@@ -114,8 +114,75 @@ let rle_decode_test2 =
    identical to the grammar in
    <http://web.cs.ucla.edu/classes/winter06/cs132/hw/hw1.html>.  *)
 
+
 type awksub_nonterminals =
   | Expr | Lvalue | Incrop | Binop | Num
+
+(* symbol_terminable *)
+let symbol_terminable_test0 =
+  symbol_terminable (T"hi") [];;
+let symbol_terminable_test1 = 
+  not (symbol_terminable (N Expr) []);;
+let symbol_terminable_test2 = 
+  not (symbol_terminable (N Expr) [T"hi";N Lvalue]);;
+let symbol_terminable_test3 = 
+  (symbol_terminable (N Expr) [T"hi";N Lvalue;N Expr]);;  
+ 
+(* rhs_terminable *)
+let rhs_terminable_test0 = 
+  rhs_terminable [] [];;
+let rhs_terminable_test1 = 
+  not (rhs_terminable [T"hi";N Lvalue] []);;
+let rhs_terminable_test2 = 
+  (rhs_terminable [T"hi";N Lvalue] [N Lvalue]);;
+let rhs_terminable_test3 = 
+  not (rhs_terminable [T"hi";N Lvalue; N Expr] [N Num; N Binop; N Expr]);;  
+
+(* check_rules *)
+(* let rules = 
+  [ (Expr,[N Lvalue;N Binop;N Num]) ] *)
+let check_rules_test0 =
+  equal_sets (check_rules [ (Expr,[N Lvalue; N Binop; N Num])] [N Lvalue; N Binop; N Num]) [N Lvalue; N Expr; N Num; N Binop];;
+let check_rules_test1 = 
+  equal_sets (check_rules [ (Expr,[N Lvalue; N Binop; N Num]); (Incrop,[N Expr; N Lvalue])] [N Lvalue; N Binop; N Num])  
+  [N Lvalue; N Expr; N Binop; N Incrop; N Num];;
+let check_rules_test2 = 
+  equal_sets (check_rules [ (Expr,[N Lvalue; T"hi";N Num]) ] []) [];;
+let check_rules_test3 = 
+  equal_sets (check_rules [ (Expr,[N Lvalue; T"hi";N Num]) ] [N Lvalue; N Num]) [N Expr;N Num;N Lvalue];;
+let rules4 = 
+  [ Incrop, [T"++"];
+    Binop, [T"--"];
+    Lvalue, [T"$"; N Binop];
+    Expr, [N Binop; N Lvalue;N Incrop]
+  ]
+let check_rules_test4 = 
+  equal_sets ( check_rules rules4 [] ) [N Binop;N Incrop;N Expr;N Lvalue];;
+
+(* repeat_check_rules *)
+let rules0 = [
+    Expr,[N Lvalue; T"("; N Binop];
+    Lvalue, [T")";N Binop];
+    Binop, [T"hi"]
+  ]
+
+let repeat_check_rules_test0 = 
+  match (repeat_check_rules rules0 []) with
+  (rules, terminable_symbols) -> (equal_sets terminable_symbols [N Binop;N Expr; N Lvalue])
+
+let rules1 = [
+    Expr,[N Lvalue; T"("; N Binop; N Expr];
+    Lvalue, [T")";N Binop];
+    Binop, [T"hi"]
+  ]
+
+let repeat_check_rules_test0 = 
+  match (repeat_check_rules rules1 []) with
+  (rules, terminable_symbols) -> (equal_sets terminable_symbols [N Binop; N Lvalue])
+
+let removes_rules_test0 = 
+  equal_sets (remove_rules (rules0, [N Expr;N Lvalue;N Binop])) [Expr,[N Lvalue; T"("; N Binop];
+    Lvalue, [T")";N Binop]; Binop, [T"hi"] ]
 
 let awksub_rules =
    [Expr, [T"("; N Expr; T")"];
@@ -171,7 +238,6 @@ let awksub_test2 =
       Num, [T "0"]; Num, [T "1"]; Num, [T "2"]; Num, [T "3"]; Num, [T "4"];
       Num, [T "5"]; Num, [T "6"]; Num, [T "7"]; Num, [T "8"]; Num, [T "9"]])
 
-(*
 let awksub_test3 =
   filter_blind_alleys (Expr, List.tl (List.tl (List.tl awksub_rules))) =
     filter_blind_alleys (Expr, List.tl (List.tl awksub_rules))
@@ -205,5 +271,4 @@ let giant_test2 =
     (Sentence,
      [Grunt, [T "khrgh"]; Shout, [T "aooogah!"];
       Sentence, [N Grunt]; Sentence, [N Shout]])
-0
- *)
+
